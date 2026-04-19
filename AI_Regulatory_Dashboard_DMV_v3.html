@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Regulatory Dashboard — DMV Health Systems | April 2026</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f4f8;--surface:#fff;--surface2:#f8fafc;--border:#e2e8f0;--border2:#cbd5e1;
+  --text:#0f172a;--text2:#374151;--text3:#64748b;--text4:#94a3b8;
+  --blue:#1F4E79;--blue2:#2E75B6;--blue3:#DBEAFE;--blue4:#1E40AF;
+  --red:#DC2626;--red2:#991B1B;--red3:#FEE2E2;
+  --orange:#D97706;--orange2:#9A3412;--orange3:#FFEDD5;
+  --yellow:#EAB308;--yellow2:#854D0E;--yellow3:#FEF9C3;
+  --green:#16A34A;--green2:#166534;--green3:#DCFCE7;
+  --purple:#7C3AED;--purple2:#4C1D95;--purple3:#EDE9FE;
+  --gray:#475569;--gray3:#F1F5F9;
+  --radius:10px;--radius-sm:6px;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#0f172a;--surface:#1e293b;--surface2:#0f172a;--border:#334155;--border2:#475569;
+    --text:#f1f5f9;--text2:#cbd5e1;--text3:#94a3b8;--text4:#64748b;
+    --red3:#450a0a;--orange3:#431407;--yellow3:#422006;--green3:#052e16;
+    --blue3:#1e3a8a;--purple3:#2e1065;--gray3:#1e293b;
+  }
+}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh}
+a{color:var(--blue2);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── LAYOUT ── */
+.shell{max-width:1200px;margin:0 auto;padding:20px 16px}
+
+/* ── HEADER ── */
+.hdr{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;padding:22px 28px;border-radius:var(--radius);margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.hdr h1{font-size:20px;font-weight:700;line-height:1.2}
+.hdr .sub{font-size:12px;color:rgba(255,255,255,.75);margin-top:4px}
+.hdr-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.badge{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:.04em}
+.updated{font-size:11px;color:rgba(255,255,255,.65)}
+
+/* ── ALERT BANNER ── */
+.alert{background:var(--yellow3);border:1px solid var(--yellow2);border-radius:var(--radius-sm);padding:10px 16px;margin-bottom:14px;font-size:13px;color:var(--yellow2);display:flex;gap:8px;align-items:flex-start}
+.alert strong{font-weight:700}
+
+/* ── NAV ── */
+.nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.nav button{padding:7px 14px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface);color:var(--text3);font-size:13px;cursor:pointer;font-weight:500;transition:all .15s}
+.nav button:hover{background:var(--surface2);color:var(--text)}
+.nav button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.nav .new-dot{display:inline-block;width:6px;height:6px;background:var(--red);border-radius:50%;margin-left:5px;vertical-align:middle}
+
+/* ── SECTION ── */
+.sec{display:none}
+.sec.on{display:block}
+
+/* ── METRICS ── */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px}
+.met{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+.met-val{font-size:24px;font-weight:700;line-height:1.1}
+.met-lbl{font-size:12px;color:var(--text3);margin-top:4px}
+.met-sub{font-size:11px;margin-top:3px;font-weight:600}
+.c-red{color:var(--red2)}.c-orange{color:var(--orange2)}.c-green{color:var(--green2)}.c-blue{color:var(--blue4)}.c-gray{color:var(--gray)}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:10px}
+.card.urgent{border-left:4px solid var(--red)}
+.card.warn{border-left:4px solid var(--orange)}
+.card.ok{border-left:4px solid var(--green)}
+.card.info{border-left:4px solid var(--blue2)}
+.card.muted{border-left:4px solid var(--text4)}
+.card.new-law{border-left:4px solid var(--purple);position:relative}
+.new-banner{position:absolute;top:-1px;right:14px;background:var(--purple);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:0 0 5px 5px;letter-spacing:.04em}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.card-title{font-size:14px;font-weight:700;color:var(--text);line-height:1.3}
+.card-meta{font-size:12px;color:var(--text3);margin-top:2px}
+.card-body{font-size:13px;color:var(--text2);line-height:1.6}
+.card-detail{font-size:12px;color:var(--text3);line-height:1.6;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);display:none}
+.card-detail.on{display:block}
+
+/* ── PILLS ── */
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;letter-spacing:.02em}
+.p-red{background:var(--red3);color:var(--red2)}
+.p-orange{background:var(--orange3);color:var(--orange2)}
+.p-yellow{background:var(--yellow3);color:var(--yellow2)}
+.p-green{background:var(--green3);color:var(--green2)}
+.p-blue{background:var(--blue3);color:var(--blue4)}
+.p-gray{background:var(--gray3);color:var(--gray);border:1px solid var(--border)}
+.p-purple{background:var(--purple3);color:var(--purple2)}
+.pill-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+
+/* ── ACTION TAG ── */
+.atag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;background:var(--yellow3);color:var(--yellow2);padding:3px 9px;border-radius:var(--radius-sm);margin-top:8px}
+
+/* ── LINKS ── */
+.links{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.lnk{font-size:11px;padding:3px 9px;border-radius:var(--radius-sm);font-weight:500;display:inline-flex;align-items:center;gap:4px}
+.lnk-g{background:var(--green3);border:1px solid #BBF7D0;color:var(--green2)}
+.lnk-b{background:var(--blue3);border:1px solid #BFDBFE;color:var(--blue4)}
+.lnk-g:hover{opacity:.85}.lnk-b:hover{opacity:.85}
+
+/* ── EXPAND BUTTON ── */
+.xbtn{font-size:12px;color:var(--blue4);cursor:pointer;background:none;border:none;padding:0;margin-top:8px;display:inline-flex;align-items:center;gap:4px}
+.xbtn:hover{text-decoration:underline}
+
+/* ── PROGRESS BARS ── */
+.prog-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:12px}
+.prog-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.prog-row:last-child{margin-bottom:0}
+.prog-lbl{font-size:12px;color:var(--text2);width:185px;flex-shrink:0;line-height:1.3}
+.prog-track{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;border:1px solid var(--border)}
+.prog-fill{height:100%;border-radius:3px;transition:width .3s}
+.prog-tag{min-width:110px;text-align:right;flex-shrink:0}
+
+/* ── GRID ── */
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:10px}
+
+/* ── TIMELINE ── */
+.tl{position:relative;padding-left:24px}
+.tl-rail{position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:var(--border)}
+.tl-item{position:relative;margin-bottom:18px}
+.tl-dot{position:absolute;left:-22px;top:4px;width:12px;height:12px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--border)}
+.tl-date{font-size:11px;color:var(--text4);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.tl-title{font-size:13px;font-weight:700;color:var(--text);margin-top:1px}
+.tl-desc{font-size:12px;color:var(--text3);margin-top:3px;line-height:1.5}
+.tl-new{display:inline-block;font-size:9px;font-weight:800;background:var(--purple);color:#fff;padding:1px 6px;border-radius:3px;margin-left:6px;letter-spacing:.05em;vertical-align:middle}
+
+/* ── TABS ── */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:14px;gap:0;flex-wrap:wrap;overflow-x:auto}
+.tab{padding:8px 16px;font-size:13px;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;font-weight:500;background:none;border-top:none;border-left:none;border-right:none}
+.tab:hover{color:var(--text)}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:700}
+.tsec{display:none}
+.tsec.on{display:block}
+
+/* ── SEARCH / FILTER ── */
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+#search-input{padding:7px 12px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;width:260px}
+#search-input::placeholder{color:var(--text4)}
+.flt-btn{padding:5px 12px;font-size:12px;border:1px solid var(--border2);border-radius:20px;background:var(--surface);color:var(--text3);cursor:pointer;font-weight:500}
+.flt-btn.on{background:var(--blue);border-color:var(--blue);color:#fff}
+
+/* ── SECTION LABEL ── */
+.slabel{font-size:11px;font-weight:700;color:var(--text4);letter-spacing:.07em;text-transform:uppercase;margin:16px 0 8px}
+
+/* ── FOOTER ── */
+.footer{padding:14px 0;font-size:11px;color:var(--text4);text-align:center;border-top:1px solid var(--border);margin-top:8px}
+
+/* ── PRINT ── */
+@media print{
+  body{background:#fff}
+  .nav,.filter-bar,.xbtn,.links{display:none}
+  .sec{display:block!important}
+  .card-detail{display:block!important}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- HEADER -->
+<div class="hdr">
+  <div>
+    <h1>AI Regulatory Landscape — DMV Health Systems</h1>
+    <p class="sub">Federal &nbsp;·&nbsp; DC &nbsp;·&nbsp; Maryland &nbsp;·&nbsp; Virginia &nbsp;|&nbsp; National Context for Multi-State Systems</p>
+  </div>
+  <div class="hdr-right">
+    <div class="badge">APRIL 2026</div>
+    <div class="updated">Last updated April 19, 2026</div>
+  </div>
+</div>
+
+<!-- ALERT: NEW LAWS -->
+<div class="alert">
+  <span>⚡</span>
+  <span><strong>New since last version:</strong> Tennessee SB1580 signed April 1 (effective July 1, 2026) — private right of action for AI mental health misrepresentation. Virginia HB797 signed April 13 — IVO framework law. 43 states now have active 2026 AI bills. Colorado AI Act enforcement begins June 30.</span>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <button class="on" onclick="nav('overview',this)">Overview</button>
+  <button onclick="nav('federal',this)">Federal</button>
+  <button onclick="nav('maryland',this)">Maryland</button>
+  <button onclick="nav('virginia',this)">Virginia</button>
+  <button onclick="nav('dc',this)">DC</button>
+  <button onclick="nav('national',this)">National / Multi-State<span class="new-dot"></span></button>
+  <button onclick="nav('timeline',this)">Timeline<span class="new-dot"></span></button>
+  <button onclick="nav('systems',this)">By Health System</button>
+  <button onclick="nav('search',this)">Search / Filter</button>
+</div>
+
+
+<!-- ═══════════════════════ OVERVIEW ═══════════════════════ -->
+<div id="sec-overview" class="sec on">
+  <div class="metrics">
+    <div class="met"><div class="met-val c-red">5+</div><div class="met-lbl">Laws in force now</div><div class="met-sub c-red">MD, TX, IL, CA, UT confirmed</div></div>
+    <div class="met"><div class="met-val c-orange">3</div><div class="met-lbl">New laws — Apr 2026</div><div class="met-sub c-orange">TN SB1580 · VA HB797 · OR SB1546</div></div>
+    <div class="met"><div class="met-val c-orange">2</div><div class="met-lbl">MD bills in Senate</div><div class="met-sub c-orange">HB883 · HB952</div></div>
+    <div class="met"><div class="met-val c-orange">Jun 30</div><div class="met-lbl">Colorado enforcement</div><div class="met-sub c-orange">Weeks away</div></div>
+    <div class="met"><div class="met-val c-green">Jul 5</div><div class="met-lbl">CMS ACCESS launches</div><div class="met-sub c-green">New Medicare AI pathway</div></div>
+    <div class="met"><div class="met-val">240+</div><div class="met-lbl">State AI bills active</div><div class="met-sub">43 states in 2026</div></div>
+  </div>
+
+  <div class="slabel">Compliance urgency by jurisdiction</div>
+  <div class="prog-wrap">
+    <div class="prog-row"><div class="prog-lbl">Maryland HB0820 (UM AI)</div><div class="prog-track"><div class="prog-fill" style="width:100%;background:var(--red)"></div></div><div class="prog-tag"><span class="pill p-red">In force now</span></div></div>
+    <div class="prog-row"><div class="prog-lbl">Texas (TRAIGA + SB1188)</div><div class="prog-track"><div class="prog-fill" style="width:100%;background:var(--red)"></div></div><div class="prog-tag"><span class="pill p-red">In force now</span></div></div>
+    <div class="prog-row"><div class="prog-lbl">Illinois Mental Health AI Law</div><div class="prog-track"><div class="prog-fill" style="width:100%;background:var(--red)"></div></div><div class="prog-tag"><span class="pill p-red">In force now</span></div></div>
+    <div class="prog-row"><div class="prog-lbl">California (multi-law)</div><div class="prog-track"><div class="prog-fill" style="width:100%;background:var(--red)"></div></div><div class="prog-tag"><span class="pill p-red">In force now</span></div></div>
+    <div class="prog-row"><div class="prog-lbl">Tennessee SB1580 ★ NEW</div><div class="prog-track"><div class="prog-fill" style="width:90%;background:var(--orange)"></div></div><div class="prog-tag"><span class="pill p-orange">Jul 1, 2026</span></div></div>
+    <div class="prog-row"><div class="prog-lbl">Colorado SB 24-205</div><div class="prog-track"><div class="prog-fill" style="width:88%;background:var(--orange)"></div></div><div class="prog-tag"><span class="pill p-orange">Jun 30, 2026</span></div></div>
+    <div class="prog-row"><div class="prog-lbl">MD: HB883, HB952</div><div class="prog-track"><div class="prog-fill" style="width:65%;background:var(--orange)"></div></div><div class="prog-tag"><span class="pill p-orange">MD Senate 2026</span></div></div>
+    <div class="prog-row"><div class="prog-lbl">Virginia HB797 (IVO) ★ NEW</div><div class="prog-track"><div class="prog-fill" style="width:55%;background:var(--yellow)"></div></div><div class="prog-tag"><span class="pill p-yellow">Signed Apr 13</span></div></div>
+    <div class="prog-row"><div class="prog-lbl">Virginia 2027 healthcare pkg</div><div class="prog-track"><div class="prog-fill" style="width:32%;background:var(--yellow)"></div></div><div class="prog-tag"><span class="pill p-yellow">Expected 2027</span></div></div>
+    <div class="prog-row"><div class="prog-lbl">DC (SDAA)</div><div class="prog-track"><div class="prog-fill" style="width:16%;background:var(--text4)"></div></div><div class="prog-tag"><span class="pill p-gray">Not passed</span></div></div>
+    <div class="prog-row"><div class="prog-lbl">Federal preemption</div><div class="prog-track"><div class="prog-fill" style="width:10%;background:var(--purple)"></div></div><div class="prog-tag"><span class="pill p-purple">Policy only</span></div></div>
+  </div>
+
+  <div class="card info">
+    <div class="card-title" style="margin-bottom:6px">April 2026 Situation Report</div>
+    <div class="card-body">The pace of state AI legislation is <strong>accelerating despite federal preemption pressure</strong> — 43 states have active 2026 bills, nearly matching all of 2025. The White House AI Framework (March 20) has not slowed state action. Tennessee just became the latest state to enact healthcare AI law with a private right of action. Virginia's HB797 (IVO framework) was signed April 13. Colorado enforcement begins June 30 — a critical near-term deadline for any system with Colorado operations. Maryland's HB0820 remains the most immediate DMV-region binding obligation.</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════ FEDERAL ═══════════════════════ -->
+<div id="sec-federal" class="sec">
+
+  <div class="card muted">
+    <div class="card-top">
+      <div><div class="card-title">White House National AI Legislative Framework</div><div class="card-meta">Released March 20, 2026 · Policy document — not law</div></div>
+      <span class="pill p-purple">Policy only</span>
+    </div>
+    <div class="card-body">Recommends Congress establish a federal AI standard preempting state laws deemed "unduly burdensome." 7 policy areas including child safety, innovation, and workforce. Has no binding force — Congress has twice rejected broad AI preemption (One Big Beautiful Bill; NDAA). As of April 19, the Commerce Dept. evaluation of "burdensome" state laws (due March 11) has <em>still not been publicly released</em>.</div>
+    <div class="card-detail" id="d-wh">Two competing legislative vehicles: TRUMP AMERICA AI Act (Sen. Blackburn, ~300-page draft, March 18) and GUARDRAILS Act (Rep. Beyer, March 20) pull in opposite directions. Over 50 Republican state lawmakers across 24 states sent a letter to President Trump on March 3, 2026, urging the Administration to "discontinue efforts to block state AI laws." State laws remain fully enforceable — only Congress can preempt under the Supremacy Clause.</div>
+    <button class="xbtn" onclick="xd('d-wh',this)">▾ Show more</button>
+    <div class="links">
+      <a class="lnk lnk-g" href="https://www.whitehouse.gov/releases/2026/03/president-donald-j-trump-unveils-national-ai-legislative-framework/" target="_blank">WH Announcement</a>
+      <a class="lnk lnk-g" href="https://www.whitehouse.gov/wp-content/uploads/2026/03/03.20.26-National-Policy-Framework-for-Artificial-Intelligence-Legislative-Recommendations.pdf" target="_blank">Framework PDF</a>
+    </div>
+  </div>
+
+  <div class="card warn">
+    <div class="card-top">
+      <div><div class="card-title">Executive Order 14365 — National Policy Framework for AI</div><div class="card-meta">Signed December 11, 2025 · AI Litigation Task Force: Jan 9, 2026</div></div>
+      <span class="pill p-orange">Active — contested</span>
+    </div>
+    <div class="card-body">Directs AG's AI Litigation Task Force to challenge state AI laws. Commerce Dept. evaluation of burdensome laws (due March 11) not yet published. May condition some discretionary federal grants on states avoiding "onerous" AI laws — potential pressure on Medicaid and federal health grants. EOs cannot directly preempt state law.</div>
+    <div class="links">
+      <a class="lnk lnk-g" href="https://www.federalregister.gov/documents/2025/12/16/2025-23092/ensuring-a-national-policy-framework-for-artificial-intelligence" target="_blank">Federal Register</a>
+      <a class="lnk lnk-g" href="https://www.justice.gov/ag/media/1422986/dl?inline" target="_blank">DOJ Task Force Memo</a>
+    </div>
+  </div>
+
+  <div class="card ok">
+    <div class="card-top">
+      <div><div class="card-title">CMS ACCESS Model — Advancing Chronic Care with Effective, Scalable Solutions</div><div class="card-meta">Applications open Jan 12, 2026 · Launches July 5, 2026 · 10-year model</div></div>
+      <span class="pill p-green">Launching Jul 5, 2026</span>
+    </div>
+    <div class="card-body">10-year voluntary Medicare Part B outcome-aligned payment model. Four clinical tracks: Early Cardio-Kidney-Metabolic, CKM, Musculoskeletal, Behavioral Health. Full payment tied to measurable patient outcomes (50% attainment threshold Year 1). Patient co-pays waived. Up to $100/yr co-management incentive for referring providers. April 1 first-cohort deadline passed — apply now for January 1, 2027 cohort.</div>
+    <div class="atag">Apply now for Jan 1, 2027 cohort — rolling applications open through 2033</div>
+    <div class="links">
+      <a class="lnk lnk-g" href="https://www.cms.gov/priorities/innovation/innovation-models/access" target="_blank">CMS Official Page</a>
+      <a class="lnk lnk-g" href="https://www.cms.gov/priorities/innovation/access-technical-frequently-asked-questions" target="_blank">CMS FAQ</a>
+      <a class="lnk lnk-g" href="https://www.cms.gov/priorities/innovation/files/access-payments-amts-perf-targets.pdf" target="_blank">Payment Targets PDF</a>
+    </div>
+  </div>
+
+  <div class="card ok">
+    <div class="card-top">
+      <div><div class="card-title">FDA TEMPO Pilot — Technology-Enabled Meaningful Patient Outcomes</div><div class="card-meta">Statements of interest open Jan 2, 2026 · Follow-ups began Mar 2026</div></div>
+      <span class="pill p-green">Active</span>
+    </div>
+    <div class="card-body">Enforcement discretion for up to ~10 digital health device manufacturers per clinical track to deploy unapproved devices within ACCESS Model. Requires real-world data collection and commitment to future marketing submission. Beneficiary consent required including disclosure of pilot status.</div>
+    <div class="links">
+      <a class="lnk lnk-g" href="https://www.fda.gov/medical-devices/digital-health-center-excellence/technology-enabled-meaningful-patient-outcomes-tempo-digital-health-devices-pilot" target="_blank">FDA TEMPO Page</a>
+    </div>
+  </div>
+
+  <div class="card info">
+    <div class="card-top">
+      <div><div class="card-title">HHS AI Strategy + Clinical Care RFI</div><div class="card-meta">RFI comment period closed Feb 23, 2026 · Docket: HHS-ONC-2026-0001</div></div>
+      <span class="pill p-blue">Comments closed — action expected</span>
+    </div>
+    <div class="card-body">Sought input on regulation, reimbursement, and R&D investment for clinical AI. 48 public comments filed. HHS policy actions expected throughout 2026 — including potential new CPT codes, HIPAA AI guidance, and FDA oversight clarifications. CMS also released two additional AI RFIs in February 2026 (CRUSH fraud detection initiative; Medicare plan selection tools).</div>
+    <div class="links">
+      <a class="lnk lnk-g" href="https://www.hhs.gov/press-room/hhs-ai-rfi.html" target="_blank">HHS Press Release</a>
+      <a class="lnk lnk-g" href="https://www.federalregister.gov/documents/2025/12/23/2025-23641/request-for-information-accelerating-the-adoption-and-use-of-artificial-intelligence-as-part-of" target="_blank">Federal Register</a>
+      <a class="lnk lnk-b" href="https://www.regulations.gov/docket/HHS-ONC-2026-0001" target="_blank">Regulations.gov Docket</a>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════ MARYLAND ═══════════════════════ -->
+<div id="sec-maryland" class="sec">
+  <div class="metrics">
+    <div class="met"><div class="met-val c-red">1</div><div class="met-lbl">Law in force now</div></div>
+    <div class="met"><div class="met-val c-orange">2</div><div class="met-lbl">Bills in Senate 2026</div></div>
+    <div class="met"><div class="met-val c-gray">2</div><div class="met-lbl">Bills not advanced (2025)</div></div>
+  </div>
+
+  <div class="card urgent">
+    <div class="card-top">
+      <div><div class="card-title">HB0820 — Health Insurance: Utilization Review: Use of AI</div><div class="card-meta">Signed May 20, 2025 (Chapter 747) · Passed 135–0 / 47–0</div></div>
+      <span class="pill p-red"><span class="pill-dot"></span>In force Oct 1, 2025</span>
+    </div>
+    <div class="card-body">Requires carriers, PBMs, and private review agents to base AI-driven coverage determinations on individual patient history; prohibit AI from independently denying, delaying, or modifying care; require human clinician review before any adverse decision; quarterly performance review; and open AI systems to Maryland Insurance Commissioner inspection.</div>
+    <div class="card-detail" id="d-hb820">Carriers must file written AI use policies with the state. Adverse decision notices must disclose AI use. Quarterly reports must specify whether AI was used in each adverse decision. Prohibits unfair discrimination in AI-driven coverage decisions. Directly affects: Johns Hopkins Health Plans, MedStar Family Choice, UMMS health plan affiliates, CareFirst, Aetna, UnitedHealth, and all carriers operating in Maryland.</div>
+    <button class="xbtn" onclick="xd('d-hb820',this)">▾ Show more</button>
+    <div class="atag">⚡ Immediate: audit all UM AI tools + verify clinician sign-off since Oct 1, 2025</div>
+    <div class="links">
+      <a class="lnk lnk-g" href="https://mgaleg.maryland.gov/mgawebsite/Legislation/Details/HB0820" target="_blank">MD MGA Bill Page</a>
+      <a class="lnk lnk-g" href="https://mgaleg.maryland.gov/2025RS/chapters_noln/Ch_747_hb0820T.pdf" target="_blank">Chaptered Text PDF</a>
+    </div>
+  </div>
+
+  <div class="card warn">
+    <div class="card-top">
+      <div><div class="card-title">HB 883 — Behavioral Health AI Representation</div><div class="card-meta">2026 MD Session · Passed House · In Senate</div></div>
+      <span class="pill p-orange">In MD Senate</span>
+    </div>
+    <div class="card-body">Prohibits AI developers from making representations suggesting the AI system is, or is able to act as, a qualified behavioral health care provider. Affirmatively prohibits misrepresentation by both the developer and the AI system itself. Directly affects mental health chatbots, digital therapeutics, and AI tools marketed for clinical mental health functions.</div>
+    <div class="atag">Audit AI vendor marketing language for behavioral health claims</div>
+    <div class="links">
+      <a class="lnk lnk-g" href="https://mgaleg.maryland.gov/mgawebsite/Legislation/Details/HB0883" target="_blank">MD MGA HB883</a>
+    </div>
+  </div>
+
+  <div class="card warn">
+    <div class="card-top">
+      <div><div class="card-title">HB 952 — Maryland Chatbot Safety Bill</div><div class="card-meta">2026 MD Session · Passed House 123–4 · In Senate</div></div>
+      <span class="pill p-orange">In MD Senate</span>
+    </div>
+    <div class="card-body">Requires chatbot operators to meet disclosure and safety obligations for AI interacting with users in commercial, health, or consumer settings. Strong 123–4 House vote signals bipartisan momentum. Patient-facing chatbots, triage bots, and scheduling AI will require disclosure updates when enacted.</div>
+    <div class="links">
+      <a class="lnk lnk-g" href="https://mgaleg.maryland.gov/mgawebsite/Legislation/Details/HB0952" target="_blank">MD MGA HB952</a>
+    </div>
+  </div>
+
+  <div class="card muted">
+    <div class="card-top">
+      <div><div class="card-title">SB936 / HB1331 — High-Risk AI Consumer Protection</div><div class="card-meta">2025 MD Session · Did not advance · Watch 2026–2027</div></div>
+      <span class="pill p-gray">Did not advance</span>
+    </div>
+    <div class="card-body">Would require impact assessments, anti-discrimination protections, and 3-year record-keeping for high-risk AI in healthcare. Modeled on Colorado's AI Act. Expected to return in narrowed form. Build compatible compliance infrastructure now.</div>
+    <div class="links">
+      <a class="lnk lnk-g" href="https://mgaleg.maryland.gov/mgawebsite/Legislation/Details/sb0936?ys=2025RS" target="_blank">MGA SB936</a>
+      <a class="lnk lnk-g" href="https://mgaleg.maryland.gov/mgawebsite/Legislation/Details/hb1331?ys=2025RS" target="_blank">MGA HB1331</a>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════ VIRGINIA ═══════════════════════ -->
+<div id="sec-virginia" class="sec">
+  <div class="metrics">
+    <div class="met"><div class="met-val c-green">1</div><div class="met-lbl">Bill signed — Apr 13</div><div class="met-sub c-green">HB797 — IVO Framework</div></div>
+    <div class="met"><div class="met-val c-gray">4+</div><div class="met-lbl">Healthcare bills deferred</div><div class="met-sub">To 2027 session</div></div>
+    <div class="met"><div class="met-val c-green">~12 mo</div><div class="met-lbl">Runway to build governance</div></div>
+  </div>
+
+  <div class="card new-law">
+    <div class="new-banner">NEW — SIGNED APR 13</div>
+    <div class="card-top">
+      <div><div class="card-title">HB 797 / SB 384 — Independent AI Verification Organizations (IVO Framework)</div><div class="card-meta">Signed by Gov. Spanberger April 13, 2026 · Passed 84–14 / 40–0 · Effective July 1, 2026</div></div>
+      <span class="pill p-green">Signed into law</span>
+    </div>
+    <div class="card-body">Creates a framework for third-party Independent Verification Organizations (IVOs) — expert bodies that can verify whether AI systems adhere to safety and best practice standards. IVO applicants apply for licensure through VITA (Virginia Information Technologies Agency). Introduced by Del. Cliff Hayes (D-Chesapeake) and Sen. Angelia Williams Graves (D-Norfolk). Strong bipartisan passage signals consensus on AI governance infrastructure as a path forward.</div>
+    <div class="card-detail" id="d-hb797">Forward-looking infrastructure bill with no immediate clinical compliance burden for health systems. However, IVO certifications — once the framework is operational — could become a competitive differentiator: health systems that obtain IVO assessments of their AI tools can demonstrate independent governance rigor to regulators, payers, and patients. This mirrors the EU AI Act's conformity assessment approach. Health systems with robust AI governance programs should track IVO development for voluntary certification opportunities in 2027.</div>
+    <button class="xbtn" onclick="xd('d-hb797',this)">▾ Show more</button>
+    <div class="links">
+      <a class="lnk lnk-g" href="https://lis.virginia.gov/bill-details/20261/HB797" target="_blank">VA LIS HB797</a>
+      <a class="lnk lnk-b" href="https://fathom.org/insights/fathom-applauds-governor-spanberger-s-signing-of-landmark-ai-governance-legislation" target="_blank">Analysis (Fathom)</a>
+    </div>
+  </div>
+
+  <div class="card muted">
+    <div class="card-top">
+      <div><div class="card-title">HB 580 — AI Fraud and Abuse (Del. Glass)</div><div class="card-meta">Passed March 11, 2026 · Status: Signed or pending — confirm by April 15</div></div>
+      <span class="pill p-yellow">Confirm status</span>
+    </div>
+    <div class="card-body">Expands Virginia Division of Consumer Counsel duties to include programs addressing AI fraud and abuse. Consumer protection focus — lower direct clinical compliance burden than the deferred healthcare AI bills.</div>
+    <div class="links">
+      <a class="lnk lnk-g" href="https://lis.virginia.gov/bill-details/20261/HB580" target="_blank">VA LIS HB580</a>
+    </div>
+  </div>
+
+  <div class="card info" style="background:var(--surface2)">
+    <div class="card-title" style="margin-bottom:6px">2026 Session Summary</div>
+    <div class="card-body">Most healthcare AI bills died or were deferred to 2027 by the House Communications, Technology and Innovation Committee. Chair Del. Hayes cited bills as "premature." Federal preemption threats (potential loss of ~$1.5B in broadband funding) added political caution. Gov. Spanberger signed over 900 bills total — AI bills were not a primary focus. Remaining healthcare AI package (SB269, HB635, anti-discrimination bill) expected to return in 2027 under Virginia's Democratic trifecta.</div>
+    <div class="links">
+      <a class="lnk lnk-g" href="https://www.governor.virginia.gov/newsroom/news-releases/2026/april-releases/name-1116470-en.html" target="_blank">Gov. Final Signing Summary</a>
+      <a class="lnk lnk-b" href="https://www.vpm.org/generalassembly/2026-02-23/virginia-ai-bills-hayes-maldonado-salim-trump-spanberger" target="_blank">VPM Session Report</a>
+    </div>
+  </div>
+
+  <div class="card muted" style="border:1px dashed var(--border2)">
+    <div class="card-top">
+      <div><div class="card-title">2027 Pipeline: SB269, HB635 + JCOTS Healthcare AI Package</div><div class="card-meta">Deferred in 2026 · Expected 2027</div></div>
+      <span class="pill p-gray">Expected 2027</span>
+    </div>
+    <div class="card-body">Deferred package: SB269 (AI therapy/counseling prohibition without licensed oversight, mirroring Illinois HB1806); HB635 (chatbot safety + minor protections + mental health crisis redirect); narrowed anti-discrimination bill; JCOTS recommendations for AI accountability officers at major health networks, human-in-the-loop mandates, PII disclosure requirements, and a statewide enforcement body with fine authority.</div>
+    <div class="atag">Use 2026–2027 runway to build voluntary governance infrastructure</div>
+    <div class="links">
+      <a class="lnk lnk-g" href="https://dls.virginia.gov/jcots/" target="_blank">JCOTS Official Page</a>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════ DC ═══════════════════════ -->
+<div id="sec-dc" class="sec">
+  <div class="metrics">
+    <div class="met"><div class="met-val c-gray">0</div><div class="met-lbl">Binding healthcare AI laws</div></div>
+    <div class="met"><div class="met-val c-blue">1</div><div class="met-lbl">Active governance order</div><div class="met-sub c-blue">Through Dec 31, 2026</div></div>
+    <div class="met"><div class="met-val c-gray">1</div><div class="met-lbl">Pending bill (SDAA)</div></div>
+  </div>
+
+  <div class="card info">
+    <div class="card-top">
+      <div><div class="card-title">Mayor's Order 2024-028 — DC AI Values and Strategic Benchmarks</div><div class="card-meta">Issued February 2024 · Active through December 31, 2026</div></div>
+      <span class="pill p-blue">Active</span>
+    </div>
+    <div class="card-body">Establishes DC's AI governance framework for District agencies. AI Taskforce active through December 31, 2026. Final agency cohort AI strategic plans due October 1, 2026. Applies to DC Health, DC Medicaid, DBH — affects health system contracting relationships with these agencies. DC's six AI values: safety and security; accountability; privacy; equity and fairness; transparency; public benefit.</div>
+    <div class="links">
+      <a class="lnk lnk-g" href="https://techplan.dc.gov/page/dcs-ai-values-and-strategic-plan" target="_blank">DC AI Strategy Page</a>
+      <a class="lnk lnk-g" href="https://octo.dc.gov" target="_blank">DC OCTO</a>
+    </div>
+  </div>
+
+  <div class="card muted">
+    <div class="card-top">
+      <div><div class="card-title">Stop Discrimination by Algorithms Act (SDAA)</div><div class="card-meta">Introduced multiple sessions · Has not passed as of April 2026</div></div>
+      <span class="pill p-gray">Not enacted</span>
+    </div>
+    <div class="card-body">Would prohibit algorithmic discrimination in healthcare, housing, employment, and credit. Grants individuals right to know when algorithms were used in decisions affecting them. DC AG's office is a consistent champion. Has been introduced in 2022–23 and 2023–24 sessions without passing. Rising probability given national trend.</div>
+    <div class="links">
+      <a class="lnk lnk-g" href="https://oag.dc.gov" target="_blank">DC AG's Office</a>
+      <a class="lnk lnk-g" href="https://lims.dccouncil.gov/search/legislation?query=artificial+intelligence" target="_blank">DC Council Search</a>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════ NATIONAL ═══════════════════════ -->
+<div id="sec-national" class="sec">
+
+  <div class="card new-law" style="margin-bottom:14px">
+    <div class="new-banner">NEW — SIGNED APR 1, 2026</div>
+    <div class="card-top">
+      <div><div class="card-title">Tennessee SB1580 — AI Mental Health Professional Misrepresentation Prohibition</div><div class="card-meta">Signed by Gov. Bill Lee April 1, 2026 · Effective July 1, 2026 · Passed 32–0 / 94–0</div></div>
+      <span class="pill p-orange">Effective Jul 1, 2026</span>
+    </div>
+    <div class="card-body">Prohibits any person from developing or deploying an AI system that <strong>advertises or represents to the public that such system is or is able to act as a qualified mental health professional.</strong> Violations are classified as violations of the Tennessee Consumer Protection Act — <strong>$5,000 civil penalty per violation plus a private right of action</strong> allowing affected individuals to sue for damages and injunctive relief. This is one of the first healthcare AI laws with a private right of action.</div>
+    <div class="card-detail" id="d-tn">DMV health systems deploying behavioral health AI tools with any Tennessee patient population or operations must: review all marketing materials, product descriptions, and public representations for prohibited claims; remove any representations that AI can "act as" a mental health professional before July 1, 2026; assess AI systems deployed in Tennessee for compliance. The private right of action significantly elevates litigation risk compared to AG-only enforcement models. Template: this is the same type of law advancing in Virginia (SB269, deferred to 2027), Maryland (HB883), and now multiple other states.</div>
+    <button class="xbtn" onclick="xd('d-tn',this)">▾ Show more</button>
+    <div class="atag">Audit behavioral health AI marketing materials before July 1, 2026</div>
+    <div class="links">
+      <a class="lnk lnk-g" href="https://legiscan.com/TN/bill/SB1580/2025" target="_blank">TN SB1580 (LegiScan)</a>
+      <a class="lnk lnk-b" href="https://www.troutmanprivacy.com/2026/04/tennessee-enacts-health-care-ai-bill-with-private-right-of-action/" target="_blank">Analysis (Troutman)</a>
+    </div>
+  </div>
+
+  <div class="slabel">In-force laws affecting multi-state DMV systems</div>
+  <div class="grid2">
+
+    <div class="card urgent">
+      <div class="card-top">
+        <div><div class="card-title">Texas — TRAIGA + SB 1188</div><div class="card-meta">TRAIGA: Jan 1, 2026 · SB1188: Sep 1, 2025</div></div>
+        <span class="pill p-red">In force</span>
+      </div>
+      <div class="card-body">SB 1188: clinician must personally review all AI recommendations before any clinical decision. TRAIGA: written patient disclosure required before AI used in diagnosis or treatment. One of the strictest state healthcare AI frameworks nationally.</div>
+      <div class="atag">Audit TX workflows now</div>
+      <div class="links">
+        <a class="lnk lnk-g" href="https://capitol.texas.gov/BillLookup/History.aspx?LegSess=89R&Bill=SB1188" target="_blank">TX SB1188</a>
+        <a class="lnk lnk-g" href="https://capitol.texas.gov/BillLookup/History.aspx?LegSess=89R&Bill=HB1709" target="_blank">TX TRAIGA</a>
+      </div>
+    </div>
+
+    <div class="card urgent">
+      <div class="card-top">
+        <div><div class="card-title">Illinois — Mental Health AI Law (HB 1806)</div><div class="card-meta">Effective August 1, 2025</div></div>
+        <span class="pill p-red">In force</span>
+      </div>
+      <div class="card-body">Prohibits AI from: making independent therapeutic decisions; directly interacting with clients in therapeutic communication; generating treatment plans without licensed professional review. Bans AI from representing itself as a licensed mental health professional. Template for Virginia SB269, Tennessee SB1580, and 10+ other pending state laws.</div>
+      <div class="links">
+        <a class="lnk lnk-g" href="https://www.ilga.gov/legislation/BillStatus.asp?DocNum=1806&GAID=17&DocTypeID=HB&SessionID=112&GA=103" target="_blank">IL HB1806</a>
+      </div>
+    </div>
+
+    <div class="card warn">
+      <div class="card-top">
+        <div><div class="card-title">Colorado — SB 24-205 (Colorado AI Act)</div><div class="card-meta">Enforcement begins June 30, 2026 — weeks away</div></div>
+        <span class="pill p-orange">⚡ Enforcement Jun 30, 2026</span>
+      </div>
+      <div class="card-body">Most comprehensive state AI law currently near enforcement. Requires: pre-deployment impact assessments; anti-discrimination protections; consumer disclosures; 3-year documentation; appeals processes for consequential decisions. Healthcare explicitly covered. HIPAA-covered entities with provider-reviewed AI recommendations may qualify for exclusion — legal review needed.</div>
+      <div class="atag">Critical — complete impact assessments + bias audits NOW</div>
+      <div class="links">
+        <a class="lnk lnk-g" href="https://leg.colorado.gov/bills/sb24-205" target="_blank">CO SB24-205</a>
+        <a class="lnk lnk-g" href="https://coag.gov/artificial-intelligence/" target="_blank">CO AG AI Page</a>
+      </div>
+    </div>
+
+    <div class="card urgent">
+      <div class="card-top">
+        <div><div class="card-title">California — AB 489, SB 1120, SB 243, AB 3030, SB 942</div><div class="card-meta">Most effective January 1, 2026</div></div>
+        <span class="pill p-red">In force</span>
+      </div>
+      <div class="card-body">AB 489: prohibits AI from implying it holds a healthcare license. SB 1120: UR AI must use individual clinical circumstances. SB 243: chatbot disclosure + crisis protocols + minor protections (private right of action, up to $1,000/violation). AB 3030: disclosure when AI generates clinical communications. SB 942: large platforms must offer AI-detection tools.</div>
+      <div class="links">
+        <a class="lnk lnk-g" href="https://leginfo.legislature.ca.gov/faces/billSearchClient.xhtml" target="_blank">CA Leginfo Search</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel" style="margin-top:16px">New laws signed — April 2026 nationally</div>
+  <div class="grid2">
+    <div class="card new-law">
+      <div class="new-banner">NEW — SIGNED APR 2026</div>
+      <div class="card-top">
+        <div><div class="card-title">Oregon — SB 1546 Chatbot Safety Law</div><div class="card-meta">Signed by Gov. Tina Kotek · April 2026</div></div>
+        <span class="pill p-purple">New law</span>
+      </div>
+      <div class="card-body">Comprehensive chatbot safety bill covering disclosure obligations, harmful content prohibitions, and — notably — <strong>a private right of action with statutory damages</strong>. Represents one of the strongest chatbot enforcement mechanisms nationally. Relevant to any DMV-based health system with patient-facing AI tools accessible to Oregon residents.</div>
+      <div class="links">
+        <a class="lnk lnk-b" href="https://www.troutmanprivacy.com/2026/04/proposed-state-ai-law-update-april-6-2026/" target="_blank">Analysis (Troutman)</a>
+      </div>
+    </div>
+
+    <div class="card new-law">
+      <div class="new-banner">NEW — SIGNED APR 2026</div>
+      <div class="card-top">
+        <div><div class="card-title">Idaho — S 1297 Chatbot Safety Law</div><div class="card-meta">Signed April 2026</div></div>
+        <span class="pill p-purple">New law</span>
+      </div>
+      <div class="card-body">Chatbot safety and disclosure requirements. Part of the national wave of chatbot legislation — 78 bills in 27 states as of April 2026. Relevant for health systems with Idaho operations or patient-accessible digital tools.</div>
+    </div>
+  </div>
+
+  <div class="card info" style="margin-top:12px">
+    <div class="card-title" style="margin-bottom:6px">2026 National Trend — April Update</div>
+    <div class="card-body">Despite federal preemption pressure, state action is <strong>accelerating</strong>: 43 states have introduced 240+ bills in 2026, nearly matching all of 2025. The Commerce Dept. evaluation of "burdensome" state laws (due March 11) has not been publicly released, removing a key deterrent to state action. 78 chatbot bills are alive in 27 states. Four dominant healthcare themes: mental health AI prohibition, patient disclosure/consent, preventing AI clinical impersonation, and payor AI restrictions. The Manatt Health tracker is the best real-time source for DMV-region health systems monitoring this space.</div>
+    <div class="links">
+      <a class="lnk lnk-b" href="https://www.manatt.com/insights/newsletters/health-highlights/manatt-health-health-ai-policy-tracker" target="_blank">Manatt Health Tracker</a>
+      <a class="lnk lnk-b" href="https://www.transparencycoalition.ai/legislation" target="_blank">TCAI Bill Tracker</a>
+      <a class="lnk lnk-b" href="https://www.troutmanprivacy.com/tag/proposed-state-ai-law-updates/" target="_blank">Troutman Weekly Updates</a>
+      <a class="lnk lnk-b" href="https://www.ncsl.org/technology-and-communication/artificial-intelligence-2025-legislation" target="_blank">NCSL AI Legislation</a>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════ TIMELINE ═══════════════════════ -->
+<div id="sec-timeline" class="sec">
+  <div class="slabel">All key dates — August 2025 through 2027</div>
+  <div class="tl">
+    <div class="tl-rail"></div>
+    <div class="tl-item"><div class="tl-dot" style="background:var(--red)"></div><div class="tl-date">Aug 1, 2025</div><div class="tl-title">Illinois Mental Health AI Law effective</div><div class="tl-desc">Prohibits independent AI therapy, therapeutic communication, or treatment plans without licensed provider oversight.</div></div>
+    <div class="tl-item"><div class="tl-dot" style="background:var(--red)"></div><div class="tl-date">Sep 1, 2025</div><div class="tl-title">Texas SB 1188 effective</div><div class="tl-desc">Clinician personal review required for all AI clinical recommendations before any decision is made.</div></div>
+    <div class="tl-item"><div class="tl-dot" style="background:var(--red)"></div><div class="tl-date">Oct 1, 2025</div><div class="tl-title">Maryland HB0820 effective — most urgent DMV binding obligation</div><div class="tl-desc">AI utilization management law in force. Quarterly reporting to MD Insurance Commissioner required.</div></div>
+    <div class="tl-item"><div class="tl-dot" style="background:var(--red)"></div><div class="tl-date">Jan 1, 2026</div><div class="tl-title">Texas TRAIGA + California multi-law package effective</div><div class="tl-desc">Written patient AI disclosure required in TX; AB489, SB243, SB942, AB3030, SB1120 active in CA.</div></div>
+    <div class="tl-item"><div class="tl-dot" style="background:var(--green)"></div><div class="tl-date">Jan 12, 2026</div><div class="tl-title">CMS ACCESS Model applications open</div><div class="tl-desc">First cohort deadline April 1 (passed). Apply now for January 1, 2027 cohort.</div></div>
+    <div class="tl-item"><div class="tl-dot" style="background:var(--blue2)"></div><div class="tl-date">Feb 23, 2026</div><div class="tl-title">HHS AI RFI comment period closed</div><div class="tl-desc">HHS policy actions on regulation, reimbursement, and R&D expected throughout 2026.</div></div>
+    <div class="tl-item"><div class="tl-dot" style="background:var(--text4)"></div><div class="tl-date">Feb 17, 2026</div><div class="tl-title">Virginia crossover — most healthcare AI bills deferred to 2027</div><div class="tl-desc">SB269, HB635, anti-discrimination bill shelved. Only HB580 and HB797 advanced.</div></div>
+    <div class="tl-item"><div class="tl-dot" style="background:var(--text4)"></div><div class="tl-date">Mar 20, 2026</div><div class="tl-title">White House National AI Legislative Framework released</div><div class="tl-desc">Policy document only. Calls on Congress to preempt state laws. Commerce evaluation of "burdensome" state laws overdue — not yet published.</div></div>
+    <div class="tl-item"><div class="tl-dot" style="background:var(--purple)"></div><div class="tl-date">Apr 1, 2026 <span class="tl-new">NEW</span></div><div class="tl-title">Tennessee SB1580 signed — mental health AI prohibition with private right of action</div><div class="tl-desc">Prohibits advertising AI as a qualified mental health professional. $5,000/violation + private right of action. Effective July 1, 2026.</div></div>
+    <div class="tl-item"><div class="tl-dot" style="background:var(--green)"></div><div class="tl-date">Apr 13, 2026 <span class="tl-new">NEW</span></div><div class="tl-title">Virginia HB797 signed — IVO Framework Law</div><div class="tl-desc">Gov. Spanberger signed AI verification organizations framework. Passed 84–14 / 40–0. Effective July 1, 2026.</div></div>
+    <div class="tl-item"><div class="tl-dot" style="background:var(--red)"></div><div class="tl-date">Jun 30, 2026</div><div class="tl-title">Colorado AI Act enforcement begins — weeks away</div><div class="tl-desc">Impact assessments, bias audits, consumer disclosures, and 3-year record-keeping required. Applies to high-risk AI in healthcare.</div></div>
+    <div class="tl-item"><div class="tl-dot" style="background:var(--orange)"></div><div class="tl-date">Jul 1, 2026</div><div class="tl-title">Tennessee SB1580 effective</div><div class="tl-desc">Behavioral health AI misrepresentation prohibition enforceable. Private right of action begins.</div></div>
+    <div class="tl-item"><div class="tl-dot" style="background:var(--green)"></div><div class="tl-date">Jul 5, 2026</div><div class="tl-title">CMS ACCESS Model launches — first cohort</div><div class="tl-desc">New Medicare reimbursement pathway for AI-enabled chronic care management. 10-year model through June 30, 2036.</div></div>
+    <div class="tl-item"><div class="tl-dot" style="background:var(--text4)"></div><div class="tl-date">Oct 1, 2026</div><div class="tl-title">DC agency AI strategic plans — final cohort due</div><div class="tl-desc">All DC government agencies must have submitted AI strategic plans. Affects DC Health, DC Medicaid, DBH contracting standards.</div></div>
+    <div class="tl-item"><div class="tl-dot" style="background:var(--text4)"></div><div class="tl-date">Late 2026</div><div class="tl-title">Maryland 2026 session bills expected to resolve</div><div class="tl-desc">HB883 (behavioral health AI representation) and HB952 (chatbot safety) moving through Maryland Senate.</div></div>
+    <div class="tl-item" style="margin-bottom:0"><div class="tl-dot" style="background:var(--orange)"></div><div class="tl-date">2027</div><div class="tl-title">Virginia healthcare AI package expected</div><div class="tl-desc">SB269, HB635, anti-discrimination bill, and JCOTS AI accountability officer requirement likely to advance under Democratic trifecta.</div></div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════ BY HEALTH SYSTEM ═══════════════════════ -->
+<div id="sec-systems" class="sec">
+  <div class="tabs">
+    <button class="tab on" onclick="sysTab('medstar',this)">MedStar Health</button>
+    <button class="tab" onclick="sysTab('jhu',this)">Johns Hopkins Medicine</button>
+    <button class="tab" onclick="sysTab('inova',this)">Inova Health</button>
+    <button class="tab" onclick="sysTab('umms',this)">UMMS</button>
+    <button class="tab" onclick="sysTab('cnmc',this)">Children's National</button>
+  </div>
+
+  <div id="tsec-medstar" class="tsec on">
+    <div class="metrics">
+      <div class="met"><div class="met-val c-red">Critical</div><div class="met-lbl">MD HB0820 — health plan ops</div></div>
+      <div class="met"><div class="met-val">DC · MD · VA</div><div class="met-lbl">Primary states</div></div>
+      <div class="met"><div class="met-val c-green">Opportunity</div><div class="met-lbl">CMS ACCESS Model</div></div>
+    </div>
+    <div class="card urgent"><div class="card-title" style="margin-bottom:6px">MedStar Family Choice — HB0820 (Immediate)</div><div class="card-body">Directly subject to Maryland HB0820 as a carrier. Audit all UM AI tools; verify clinician sign-off documented on every adverse decision since October 1, 2025; establish quarterly Commissioner reporting; confirm Commissioner audit access.</div><div class="atag">⚡ Immediate action required</div></div>
+    <div class="card ok"><div class="card-title" style="margin-bottom:6px">MedStar AI CoLab (Georgetown Partnership) — Policy Engagement</div><div class="card-body">MedStar's AI CoLab positions the system as a leading academic voice in AI policy with direct channels to HHS, ONC, and FDA. This is relevant to CMS ACCESS Model participation decisions and future TEMPO pilot partnerships. MedStar hosted the "AI for Health" Summit (October 2025) with DAIMLAS.</div></div>
+    <div class="card muted"><div class="card-title" style="margin-bottom:6px">Multi-state + New Tennessee Exposure</div><div class="card-body">MedStar's primary operations are DC, MD, VA. No binding Virginia healthcare AI obligations until 2027. Monitor Maryland HB883 and HB952. If MedStar has any Tennessee operations or behavioral health AI tools accessible to Tennessee patients, Tennessee SB1580 (effective July 1, 2026) applies — audit behavioral health AI marketing language now.</div></div>
+  </div>
+
+  <div id="tsec-jhu" class="tsec">
+    <div class="metrics">
+      <div class="met"><div class="met-val c-red">Critical</div><div class="met-lbl">JHHP — MD HB0820</div></div>
+      <div class="met"><div class="met-val">MD · DC · VA · FL+</div><div class="met-lbl">Multi-state</div></div>
+      <div class="met"><div class="met-val c-red">Weeks</div><div class="met-lbl">Colorado deadline Jun 30</div></div>
+    </div>
+    <div class="card urgent"><div class="card-title" style="margin-bottom:6px">Johns Hopkins Health Plans — HB0820 (Immediate)</div><div class="card-body">JHHP directly subject to Maryland HB0820. Audit all UR AI tools; verify clinician sign-off documented on every adverse decision since October 1, 2025; establish quarterly Commissioner reporting; confirm Commissioner audit access.</div><div class="atag">⚡ Immediate action required</div></div>
+    <div class="card warn"><div class="card-title" style="margin-bottom:6px">Colorado AI Act — Jun 30, 2026 (Weeks Away)</div><div class="card-body">If JHM has Colorado operations or affiliates, the Colorado AI Act enforcement begins June 30. Impact assessments and bias audits must be completed now. HIPAA exclusion may apply — legal review needed immediately.</div><div class="atag">⚡ Assess CO exposure + complete impact assessments now</div></div>
+    <div class="card warn"><div class="card-title" style="margin-bottom:6px">Tennessee SB1580 — New Exposure (Jul 1, 2026)</div><div class="card-body">JHM's national footprint includes behavioral health AI tools potentially accessible to Tennessee patients. Review all behavioral health AI marketing materials for "qualified mental health professional" representations before July 1, 2026. $5,000/violation + private right of action.</div></div>
+    <div class="card ok"><div class="card-title" style="margin-bottom:6px">TEMPO / ACCESS Opportunity</div><div class="card-body">JHM's research-developed AI tools targeting hypertension, diabetes, MSK, or behavioral health conditions may be eligible for the FDA TEMPO pilot and CMS ACCESS Model — providing a structured pathway to clinical deployment before full FDA clearance.</div></div>
+  </div>
+
+  <div id="tsec-inova" class="tsec">
+    <div class="metrics">
+      <div class="met"><div class="met-val">VA · DC</div><div class="met-lbl">Primary states</div></div>
+      <div class="met"><div class="met-val c-green">Lower</div><div class="met-lbl">2026 compliance burden</div><div class="met-sub c-green">VA bills deferred 2027</div></div>
+      <div class="met"><div class="met-val c-green">Jul 2026</div><div class="met-lbl">CMS ACCESS opportunity</div></div>
+    </div>
+    <div class="card ok"><div class="card-title" style="margin-bottom:6px">Virginia — Compliance Relief in 2026</div><div class="card-body">Major Virginia healthcare AI bills deferred to 2027. Inova's only new Virginia AI obligation in 2026 is HB797 (IVO framework, signed April 13, effective July 1) — which has no immediate clinical compliance burden. Virginia HB580 (AI fraud/abuse) status to confirm. Use 2026 to voluntarily build governance infrastructure for the expected 2027 legislative package.</div><div class="atag">Designate AI Accountability Officer in 2026</div></div>
+    <div class="card warn"><div class="card-title" style="margin-bottom:6px">2027 Preparation: JCOTS Recommendations</div><div class="card-body">JCOTS recommendations forming 2027 Virginia legislation include an AI accountability officer requirement specifically referencing large health networks. Inova should designate an AI Accountability Officer or Committee, document clinician-in-the-loop workflows, and conduct voluntary bias audits in 2026 to be ready for 2027 obligations.</div></div>
+    <div class="card ok"><div class="card-title" style="margin-bottom:6px">CMS ACCESS Model — Jan 2027 Cohort</div><div class="card-body">Inova's Northern Virginia Medicare population makes ACCESS Model participation directly relevant. Apply now for January 1, 2027 cohort. Rolling applications through 2033.</div></div>
+  </div>
+
+  <div id="tsec-umms" class="tsec">
+    <div class="metrics">
+      <div class="met"><div class="met-val c-red">Critical</div><div class="met-lbl">MD HB0820 — UMMS plans</div></div>
+      <div class="met"><div class="met-val">Maryland-focused</div><div class="met-lbl">Primary jurisdiction</div></div>
+      <div class="met"><div class="met-val c-orange">Monitor</div><div class="met-lbl">HB883 + HB952</div></div>
+    </div>
+    <div class="card urgent"><div class="card-title" style="margin-bottom:6px">UMMS Health Plan Affiliates — HB0820 (Immediate)</div><div class="card-body">UMMS health plan affiliates directly subject to HB0820. Immediate obligations: audit all AI-driven UR tools; verify clinician sign-off documented on adverse decisions since October 1, 2025; establish quarterly Commissioner reporting; confirm audit access.</div><div class="atag">⚡ Immediate action required</div></div>
+    <div class="card warn"><div class="card-title" style="margin-bottom:6px">Maryland Senate Bills — HB883 + HB952</div><div class="card-body">As a primarily Maryland-based system, UMMS should closely monitor HB883 (behavioral health AI representation) and HB952 (chatbot safety) in the Maryland Senate. When enacted, patient-facing AI and mental health tools will require disclosure and safety protocol updates. Begin building compliance-compatible systems now.</div></div>
+  </div>
+
+  <div id="tsec-cnmc" class="tsec">
+    <div class="metrics">
+      <div class="met"><div class="met-val">DC · MD · VA</div><div class="met-lbl">Operating region</div></div>
+      <div class="met"><div class="met-val c-red">High</div><div class="met-lbl">Mental health AI exposure</div></div>
+      <div class="met"><div class="met-val c-red">High</div><div class="met-lbl">Minor-focused AI laws</div></div>
+    </div>
+    <div class="card urgent"><div class="card-title" style="margin-bottom:6px">Pediatric + Behavioral Health — Elevated Exposure</div><div class="card-body">As a pediatric system, Children's National faces heightened exposure to the wave of minor-focused AI legislation. Maryland HB952 (chatbot safety, 123–4), California SB243 (minor protections + private right of action), Tennessee SB1580 (effective July 1, 2026), and Virginia's deferred HB635 (child safety + crisis redirect) all create specific obligations. Audit all AI tools accessible by minors now.</div><div class="atag">⚡ Audit all AI tools accessible by minors</div></div>
+    <div class="card warn"><div class="card-title" style="margin-bottom:6px">Tennessee SB1580 — New (Jul 1, 2026)</div><div class="card-body">Any behavioral health digital tools accessible to Tennessee patients must be reviewed for prohibited "qualified mental health professional" representations before July 1, 2026. The private right of action makes this a litigation risk, not just a regulatory one.</div></div>
+    <div class="card info"><div class="card-title" style="margin-bottom:6px">DC Federal Territory Considerations</div><div class="card-body">Children's National serves federal employees, military families, and internationally insured patients in DC. These populations may be governed by federal rather than DC law for some purposes. Clarify with counsel which AI governance requirements apply to federally-insured pediatric patients.</div></div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════ SEARCH / FILTER ═══════════════════════ -->
+<div id="sec-search" class="sec">
+  <div class="filter-bar">
+    <input type="text" id="search-input" placeholder="Search laws, topics, jurisdictions..." oninput="doSearch()">
+    <button class="flt-btn on" id="f-all" onclick="setFilter('all',this)">All</button>
+    <button class="flt-btn" id="f-inforce" onclick="setFilter('inforce',this)">In force now</button>
+    <button class="flt-btn" id="f-new" onclick="setFilter('new',this)">New — Apr 2026</button>
+    <button class="flt-btn" id="f-mh" onclick="setFilter('mh',this)">Mental health AI</button>
+    <button class="flt-btn" id="f-um" onclick="setFilter('um',this)">Utilization mgmt</button>
+    <button class="flt-btn" id="f-chatbot" onclick="setFilter('chatbot',this)">Chatbot / disclosure</button>
+  </div>
+  <div id="search-results"></div>
+</div>
+
+<div class="footer">
+  Prepared April 19, 2026 &nbsp;·&nbsp; Sources verified: MD MGA, VA LIS, whitehouse.gov, cms.gov, fda.gov, federalregister.gov, LegiScan, Manatt Health, Troutman Privacy, TCAI &nbsp;·&nbsp; Does not constitute legal advice
+</div>
+</div>
+
+<script>
+const laws = [
+  {title:"Maryland HB0820 — Utilization Review AI",meta:"In force Oct 1, 2025",body:"Prohibits AI from independently denying, delaying, or modifying care. Human clinician review required before any adverse decision. Quarterly reports to MD Insurance Commissioner. Directly affects carriers, PBMs, and private review agents.",url:"https://mgaleg.maryland.gov/mgawebsite/Legislation/Details/HB0820",status:"In force now",tags:["inforce","um","maryland"],pill:"p-red",pillText:"In force"},
+  {title:"Maryland HB883 — Behavioral Health AI",meta:"In MD Senate — 2026",body:"Prohibits AI from representing itself as a qualified behavioral health provider. Affects mental health chatbots, digital therapeutics, and behavioral health AI tools.",url:"https://mgaleg.maryland.gov/mgawebsite/Legislation/Details/HB0883",status:"In MD Senate",tags:["mh","maryland","chatbot"],pill:"p-orange",pillText:"In Senate"},
+  {title:"Maryland HB952 — Chatbot Safety",meta:"Passed House 123-4 · In MD Senate",body:"Requires chatbot disclosure and safety obligations for AI interacting with users in commercial and health settings.",url:"https://mgaleg.maryland.gov/mgawebsite/Legislation/Details/HB0952",status:"In MD Senate",tags:["chatbot","maryland"],pill:"p-orange",pillText:"In Senate"},
+  {title:"Virginia HB797 — IVO Framework ★ NEW",meta:"Signed April 13, 2026 · Effective July 1, 2026",body:"Creates framework for Independent Verification Organizations to certify AI system safety adherence. Passed 84-14 / 40-0. Forward-looking infrastructure bill.",url:"https://lis.virginia.gov/bill-details/20261/HB797",status:"Signed Apr 13",tags:["new","virginia"],pill:"p-green",pillText:"Signed"},
+  {title:"Tennessee SB1580 — Mental Health AI ★ NEW",meta:"Signed April 1, 2026 · Effective July 1, 2026",body:"Prohibits advertising AI as a qualified mental health professional. $5,000/violation + private right of action. Passed 32-0 / 94-0.",url:"https://legiscan.com/TN/bill/SB1580/2025",status:"Effective Jul 1, 2026",tags:["new","mh","inforce"],pill:"p-orange",pillText:"Effective Jul 1"},
+  {title:"Texas TRAIGA — Patient AI Disclosure",meta:"Effective January 1, 2026",body:"Written patient disclosure required before AI used in diagnosis or treatment. Prohibits AI with intent to discriminate. One of the strictest state frameworks nationally.",url:"https://capitol.texas.gov/BillLookup/History.aspx?LegSess=89R&Bill=HB1709",status:"In force now",tags:["inforce","chatbot"],pill:"p-red",pillText:"In force"},
+  {title:"Texas SB1188 — Clinician AI Review",meta:"Effective September 1, 2025",body:"Clinician must personally review all AI recommendations before any clinical decision. Requires patient disclosure of AI use.",url:"https://capitol.texas.gov/BillLookup/History.aspx?LegSess=89R&Bill=SB1188",status:"In force now",tags:["inforce","um"],pill:"p-red",pillText:"In force"},
+  {title:"Illinois HB1806 — Mental Health AI Law",meta:"Effective August 1, 2025",body:"Prohibits AI from making independent therapeutic decisions, directly interacting with mental health clients, or generating treatment plans without licensed professional review.",url:"https://www.ilga.gov/legislation/BillStatus.asp?DocNum=1806&GAID=17&DocTypeID=HB&SessionID=112&GA=103",status:"In force now",tags:["inforce","mh"],pill:"p-red",pillText:"In force"},
+  {title:"Colorado SB 24-205 — Colorado AI Act",meta:"Enforcement begins June 30, 2026",body:"Impact assessments, anti-bias controls, consumer disclosures, and 3-year record-keeping for high-risk AI in healthcare. Enforcement weeks away.",url:"https://leg.colorado.gov/bills/sb24-205",status:"Enforcement Jun 30, 2026",tags:["um","chatbot"],pill:"p-orange",pillText:"Jun 30, 2026"},
+  {title:"California AB489 — Healthcare AI Impersonation",meta:"Effective January 1, 2026",body:"Prohibits AI from using terms implying it holds a healthcare license.",url:"https://leginfo.legislature.ca.gov/faces/billSearchClient.xhtml",status:"In force now",tags:["inforce","chatbot","mh"],pill:"p-red",pillText:"In force"},
+  {title:"California SB243 — Companion Chatbots (Minor Protections)",meta:"Effective January 1, 2026",body:"Chatbot disclosure + mandatory crisis protocols for suicidal ideation + minor protections. Private right of action up to $1,000/violation.",url:"https://leginfo.legislature.ca.gov/faces/billSearchClient.xhtml",status:"In force now",tags:["inforce","chatbot","mh"],pill:"p-red",pillText:"In force"},
+  {title:"White House National AI Legislative Framework",meta:"Released March 20, 2026",body:"7-pillar policy document recommending Congress preempt state AI laws. Not legally binding. Commerce Dept. evaluation overdue.",url:"https://www.whitehouse.gov/releases/2026/03/president-donald-j-trump-unveils-national-ai-legislative-framework/",status:"Policy only",tags:[],pill:"p-purple",pillText:"Policy"},
+  {title:"CMS ACCESS Model",meta:"Launches July 5, 2026",body:"10-year voluntary Medicare Part B outcome-aligned payment model for AI-enabled chronic care. Four clinical tracks. Patient co-pays waived.",url:"https://www.cms.gov/priorities/innovation/innovation-models/access",status:"Launching Jul 5",tags:["new"],pill:"p-green",pillText:"Launching"},
+  {title:"DC Mayor's AI Values Order 2024-028",meta:"Active through December 31, 2026",body:"Establishes DC AI governance framework for government agencies. Affects health system contracting with DC Health, DC Medicaid, and DBH.",url:"https://techplan.dc.gov/page/dcs-ai-values-and-strategic-plan",status:"Active",tags:[],pill:"p-blue",pillText:"Active"},
+  {title:"Oregon SB1546 — Chatbot Safety ★ NEW",meta:"Signed April 2026",body:"Chatbot safety law with private right of action and statutory damages — one of the strongest enforcement mechanisms nationally.",url:"https://www.troutmanprivacy.com/2026/04/proposed-state-ai-law-update-april-6-2026/",status:"New law",tags:["new","chatbot"],pill:"p-purple",pillText:"New"},
+];
+
+let currentFilter = 'all';
+
+function doSearch(){
+  const q = document.getElementById('search-input').value.toLowerCase();
+  renderResults(q, currentFilter);
+}
+function setFilter(f, btn){
+  currentFilter = f;
+  document.querySelectorAll('.flt-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderResults(document.getElementById('search-input').value.toLowerCase(), f);
+}
+function renderResults(q, f){
+  const container = document.getElementById('search-results');
+  const filtered = laws.filter(l => {
+    const matchQ = !q || l.title.toLowerCase().includes(q) || l.body.toLowerCase().includes(q) || l.meta.toLowerCase().includes(q);
+    const matchF = f==='all' || l.tags.includes(f);
+    return matchQ && matchF;
+  });
+  if(!filtered.length){container.innerHTML='<div class="card muted"><div class="card-body">No results found.</div></div>';return;}
+  container.innerHTML = filtered.map(l=>`
+    <div class="card" style="border-left:4px solid var(--border2)">
+      <div class="card-top">
+        <div><div class="card-title">${l.title}</div><div class="card-meta">${l.meta}</div></div>
+        <span class="pill ${l.pill}">${l.pillText}</span>
+      </div>
+      <div class="card-body">${l.body}</div>
+      <div class="links"><a class="lnk lnk-b" href="${l.url}" target="_blank">Official source</a></div>
+    </div>
+  `).join('');
+}
+
+// NAVIGATION
+function nav(name, btn){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('on'));
+  document.getElementById('sec-'+name).classList.add('on');
+  btn.classList.add('on');
+  if(name==='search') renderResults('','all');
+}
+
+// EXPAND DETAIL
+function xd(id, btn){
+  const d=document.getElementById(id);
+  const open=d.classList.toggle('on');
+  btn.textContent=open?'▴ Show less':'▾ Show more';
+}
+
+// SYSTEM TABS
+function sysTab(name, tab){
+  document.querySelectorAll('.tsec').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('tsec-'+name).classList.add('on');
+  tab.classList.add('on');
+}
+</script>
+</body>
+</html>
